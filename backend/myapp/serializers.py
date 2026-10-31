@@ -45,6 +45,11 @@ class VehicleSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     vehicle_name = serializers.CharField(source="vehicle.__str__", read_only=True)
+    customer_name = serializers.SerializerMethodField()
+    customer_phone = serializers.CharField(source="customer.phone", read_only=True)
+
+    def get_customer_name(self, b):
+        return b.customer.get_full_name() or b.customer.username
 
     class Meta:
         model = Booking
