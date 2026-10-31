@@ -161,11 +161,7 @@ SPECTACULAR_SETTINGS = {"TITLE": "Car Rental API", "VERSION": "1.0.0"}
 DEPOSIT_PERCENT = int(os.getenv("DEPOSIT_PERCENT", "20"))
 
 # ---------- Email ----------
-MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.console.EmailBackend",
-    },
-}
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # ---------- Production security (only applies when DEBUG=False) ----------
 if not DEBUG:
@@ -173,4 +169,4 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORMAT_PROTO", "https")
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
