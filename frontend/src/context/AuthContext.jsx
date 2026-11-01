@@ -6,13 +6,11 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Only need to load the user if there's a saved token
+  const [loading, setLoading] = useState(() => !!localStorage.getItem("access"));
 
   useEffect(() => {
-    if (!localStorage.getItem("access")) {
-      setLoading(false);
-      return;
-    }
+    if (!localStorage.getItem("access")) return;
     api.get("/auth/me/")
       .then((r) => setUser(r.data))
       .catch(() => {})

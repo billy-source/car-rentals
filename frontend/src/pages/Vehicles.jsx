@@ -13,13 +13,16 @@ export default function Vehicles() {
     search: "", category: "", ordering: "price_per_day",
     from: sp.get("from") || "", to: sp.get("to") || "", page: 1,
   });
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // `key` records which filters the current data/error belong to
+  const [result, setResult] = useState({ key: null, data: null, error: "" });
+  const filtersKey = JSON.stringify(filters);
+  const loading = result.key !== filtersKey;
+  const { data, error } = result;
 
   const set = (key, value) => setFilters((f) => ({ ...f, [key]: value, page: 1 }));
 
   useEffect(() => {
+    let ignore = false; // drop responses for filters that have since changed
     const params = { page: filters.page, ordering: filters.ordering };
     if (filters.search) params.search = filters.search;
     if (filters.category) params.category = filters.category;
@@ -27,12 +30,13 @@ export default function Vehicles() {
       params.available_from = filters.from;
       params.available_to = filters.to;
     }
-    setLoading(true);
     api.get("/vehicles/", { params })
-      .then((r) => { setData(r.data); setError(""); })
-      .catch((e) => setError(getError(e)))
-      .finally(() => setLoading(false));
-  }, [filters]);
+      .then((r) => { if (!ignore) setResult({ key: filtersKey, data: r.data, error: "" }); })
+      .catch((e) => {
+        if (!ignore) setResult((prev) => ({ key: filtersKey, data: prev.data, error: getError(e) }));
+      });
+    return () => { ignore = true; };
+  }, [filters, filtersKey]);
 
   const input = "rounded-lg border bg-white px-3 py-2 text-sm outline-none focus:border-brand-500";
 
