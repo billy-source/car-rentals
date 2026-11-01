@@ -150,6 +150,10 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {"anon": "100/hour", "user": "1000/hour"},
 }
 
+# Looser limits in dev so frequent reloads don't get throttled
+if DEBUG:
+    REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {"anon": "10000/hour", "user": "10000/hour"}
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),

@@ -16,8 +16,12 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config;
     const isAuthCall = /auth\/(login|refresh)\//.test(original?.url || "");
-    if (err.response?.status === 401 && !original._retry && !isAuthCall && localStorage.getItem("refresh")) {
-      original._retry = true;
+    if (err.response?.status !== 401 || !original || original._retry || isAuthCall) {
+      return Promise.reject(err);
+    }
+    original._retry = true;
+
+    if (localStorage.getItem("refresh")) {
       try {
         refreshing =
           refreshing ||
@@ -29,12 +33,16 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${data.access}`;
         return api(original);
       } catch {
-        localStorage.removeItem("access");
-        localStorage.removeItem("refresh");
-        window.location.href = "/login";
+        // refresh failed: fall through and drop the dead tokens
       }
     }
-    return Promise.reject(err);
+
+    // Session is gone. Clear tokens and retry once without auth, so public
+    // pages (like /vehicles) still load. Protected pages redirect via ProtectedRoute.
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    delete original.headers.Authorization;
+    return api(original);
   }
 );
 
