@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
-import { Alert, Pagination, StatusBadge } from "../components/ui";
+import { Alert, ConfirmDialog, Pagination, StatusBadge } from "../components/ui";
 import { formatKES, getError, todayStr } from "../utils/format";
 
 export default function MyBookings() {
   const [data, setData] = useState(null);
   const [page, setPage] = useState(1);
   const [error, setError] = useState("");
+  const [bookingToCancel, setBookingToCancel] = useState(null);
 
   const load = useCallback(() => {
     api.get("/bookings/", { params: { page } })
@@ -17,13 +18,14 @@ export default function MyBookings() {
 
   useEffect(() => { load(); }, [load]);
 
-  const cancel = async (id) => {
-    if (!confirm("Cancel this booking?")) return;
+  const cancel = async () => {
     try {
-      await api.post(`/bookings/${id}/cancel/`);
+      await api.post(`/bookings/${bookingToCancel}/cancel/`);
+      setBookingToCancel(null);
       load();
     } catch (e) {
       setError(getError(e));
+      setBookingToCancel(null);
     }
   };
 
@@ -51,7 +53,7 @@ export default function MyBookings() {
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
               <p>Total <b>{formatKES(b.total_price)}</b> · Deposit <b>{formatKES(b.deposit_amount)}</b></p>
               {["pending", "approved"].includes(b.status) && b.start_date > todayStr() && (
-                <button onClick={() => cancel(b.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-red-600 hover:bg-red-50">
+                <button onClick={() => setBookingToCancel(b.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-red-600 hover:bg-red-50">
                   Cancel booking
                 </button>
               )}
@@ -60,6 +62,7 @@ export default function MyBookings() {
         ))}
       </div>
       <Pagination data={data} page={page} setPage={setPage} />
+      {bookingToCancel && <ConfirmDialog title="Cancel booking?" message="Are you sure you want to cancel this booking? This action cannot be undone." confirmLabel="Cancel booking" onCancel={() => setBookingToCancel(null)} onConfirm={cancel} />}
     </div>
   );
 }

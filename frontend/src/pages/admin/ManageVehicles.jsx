@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import api from "../../api/axios";
-import { Alert, Pagination } from "../../components/ui";
+import { Alert, ConfirmDialog, Pagination } from "../../components/ui";
 import { formatKES, getError } from "../../utils/format";
 
 const EMPTY = {
@@ -76,6 +76,7 @@ export default function ManageVehicles() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState(null); // null | "new" | vehicle object
   const [error, setError] = useState("");
+  const [vehicleToRemove, setVehicleToRemove] = useState(null);
 
   const load = useCallback(() => {
     api.get("/vehicles/", { params: { page, ordering: "-created_at" } })
@@ -85,13 +86,14 @@ export default function ManageVehicles() {
 
   useEffect(() => { load(); }, [load]);
 
-  const remove = async (v) => {
-    if (!confirm(`Remove ${v.make} ${v.model} from listings?`)) return;
+  const remove = async () => {
     try {
-      await api.delete(`/vehicles/${v.id}/`);
+      await api.delete(`/vehicles/${vehicleToRemove.id}/`);
+      setVehicleToRemove(null);
       load();
     } catch (e) {
       setError(getError(e));
+      setVehicleToRemove(null);
     }
   };
 
@@ -150,6 +152,7 @@ export default function ManageVehicles() {
         </table>
       </div>
       <Pagination data={data} page={page} setPage={setPage} />
+      {vehicleToRemove && <ConfirmDialog title="Remove vehicle?" message={`Remove ${vehicleToRemove.make} ${vehicleToRemove.model} from listings?`} confirmLabel="Remove vehicle" onCancel={() => setVehicleToRemove(null)} onConfirm={remove} />}
     </div>
   );
 }

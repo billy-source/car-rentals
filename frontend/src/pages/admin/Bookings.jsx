@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import { Alert, Pagination, StatusBadge } from "../../components/ui";
+import { Alert, ConfirmDialog, Pagination, StatusBadge } from "../../components/ui";
 import { formatKES, getError } from "../../utils/format";
 
 const STATUSES = ["", "pending", "approved", "active", "completed", "rejected", "cancelled"];
@@ -16,6 +16,7 @@ export default function AdminBookings() {
   const [modal, setModal] = useState(null); // { booking, type: "pickup" | "return" }
   const [modalError, setModalError] = useState("");
   const [handover, setHandover] = useState({ mileage: "", notes: "" });
+  const [pendingAction, setPendingAction] = useState(null);
 
   const load = useCallback(() => {
     const params = { page };
@@ -28,12 +29,13 @@ export default function AdminBookings() {
   useEffect(() => { load(); }, [load]);
 
   const act = async (id, action) => {
-    if (["reject", "cancel"].includes(action) && !confirm(`Are you sure you want to ${action} this booking?`)) return;
     try {
       await api.post(`/bookings/${id}/${action}/`);
+      setPendingAction(null);
       load();
     } catch (e) {
       setError(getError(e));
+      setPendingAction(null);
     }
   };
 
@@ -95,13 +97,13 @@ export default function AdminBookings() {
                     {isAdmin && b.status === "pending" && (
                       <>
                         <button className={`${btn} text-green-700`} onClick={() => act(b.id, "approve")}>Approve</button>
-                        <button className={`${btn} text-red-600`} onClick={() => act(b.id, "reject")}>Reject</button>
+                        <button className={`${btn} text-red-600`} onClick={() => setPendingAction({ id: b.id, action: "reject" })}>Reject</button>
                       </>
                     )}
                     {b.status === "approved" && <button className={btn} onClick={() => openModal(b, "pickup")}>Pickup</button>}
                     {b.status === "active" && <button className={btn} onClick={() => openModal(b, "return")}>Return</button>}
                     {isAdmin && ["pending", "approved"].includes(b.status) && (
-                      <button className={`${btn} text-red-600`} onClick={() => act(b.id, "cancel")}>Cancel</button>
+                      <button className={`${btn} text-red-600`} onClick={() => setPendingAction({ id: b.id, action: "cancel" })}>Cancel</button>
                     )}
                   </div>
                 </td>
@@ -133,6 +135,7 @@ export default function AdminBookings() {
           </form>
         </div>
       )}
+      {pendingAction && <ConfirmDialog title={`${pendingAction.action === "reject" ? "Reject" : "Cancel"} booking?`} message={`Are you sure you want to ${pendingAction.action} booking #${pendingAction.id}?`} confirmLabel={`${pendingAction.action === "reject" ? "Reject" : "Cancel"} booking`} onCancel={() => setPendingAction(null)} onConfirm={() => act(pendingAction.id, pendingAction.action)} />}
     </div>
   );
 }
