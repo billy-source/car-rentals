@@ -15,6 +15,9 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.CUSTOMER)
 
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
+
     def save(self, *args, **kwargs):
         if self.is_superuser:
             self.role = self.Role.ADMIN

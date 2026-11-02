@@ -16,7 +16,7 @@ export default function Register() {
     setError("");
     try {
       await api.post("/auth/register/", form);
-      await login(form.username, form.password);
+      await login(form.email, form.password);
       navigate("/vehicles", { replace: true });
     } catch (e) {
       setError(getError(e));
