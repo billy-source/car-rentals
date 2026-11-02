@@ -14,28 +14,44 @@ function VehicleForm({ vehicle, onDone, onCancel }) {
   const { register, handleSubmit, formState: { isSubmitting } } = useForm({ defaultValues: vehicle || EMPTY });
   const [files, setFiles] = useState([]);
   const [error, setError] = useState("");
+  const [createdVehicle, setCreatedVehicle] = useState(null);
 
   const onSubmit = async (form) => {
     setError("");
+    let imageUploadError = false;
     try {
-      const { data } = vehicle
-        ? await api.patch(`/vehicles/${vehicle.id}/`, form)
-        : await api.post("/vehicles/", form);
-      for (const file of files) {
+      let savedVehicle = vehicle || createdVehicle;
+      if (savedVehicle) {
+        await api.patch(`/vehicles/${savedVehicle.id}/`, form);
+      } else {
+        const { data } = await api.post("/vehicles/", form);
+        savedVehicle = data;
+        setCreatedVehicle(data);
+      }
+
+      for (let index = 0; index < files.length; index += 1) {
         const fd = new FormData();
-        fd.append("image", file);
-        await api.post(`/vehicles/${data.id}/upload_image/`, fd);
+        fd.append("image", files[index], files[index].name);
+        try {
+          await api.post(`/vehicles/${savedVehicle.id}/upload_image/`, fd);
+          setFiles((remaining) => remaining.slice(1));
+        } catch (e) {
+          imageUploadError = true;
+          throw e;
+        }
       }
       onDone();
     } catch (e) {
-      setError(getError(e));
+      setError(imageUploadError
+        ? `Vehicle saved, but an image could not be uploaded. Save again to retry. ${getError(e)}`
+        : getError(e));
     }
   };
 
   const input = "w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-brand-500";
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-3 rounded-xl border bg-white p-5">
-      <h2 className="text-lg font-semibold">{vehicle ? "Edit vehicle" : "Add vehicle"}</h2>
+      <h2 className="text-lg font-semibold">{vehicle || createdVehicle ? "Edit vehicle" : "Add vehicle"}</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         <input className={input} placeholder="Make" {...register("make", { required: true })} />
         <input className={input} placeholder="Model" {...register("model", { required: true })} />
