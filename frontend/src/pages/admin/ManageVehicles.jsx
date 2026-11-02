@@ -158,7 +158,7 @@ export default function ManageVehicles() {
                   <div className="flex gap-1.5">
                     <button onClick={() => setEditing(v)} className="rounded-md border px-2.5 py-1 text-xs hover:bg-gray-50">Edit</button>
                     {v.is_active && (
-                      <button onClick={() => remove(v)} className="rounded-md border px-2.5 py-1 text-xs text-red-600 hover:bg-red-50">Remove</button>
+                      <button onClick={() => setVehicleToRemove(v)} className="rounded-md border px-2.5 py-1 text-xs text-red-600 hover:bg-red-50">Remove</button>
                     )}
                   </div>
                 </td>
